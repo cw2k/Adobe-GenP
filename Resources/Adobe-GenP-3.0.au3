@@ -243,7 +243,7 @@ Func RecursiveFileSearch($INSTARTDIR, $DEPTH, $FILECOUNT)
 	;_FileListToArrayEx
 
 
-	Dim $RecursiveFileSearch_MaxDeep = 1
+	Dim $RecursiveFileSearch_MaxDeep = 6
 	Dim $RecursiveFileSearch_WhenFoundRaiseToLevel = 0  ;0 to disable raising
 	if $DEPTH > $RecursiveFileSearch_MaxDeep then return
 
