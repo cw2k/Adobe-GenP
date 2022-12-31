@@ -17,50 +17,140 @@ Opt( "MustDeclareVars", 1  )
 
 HotKeySet("{ESC}", "ShowEscMessage")
 
-Global $IPATTERNBANNERS = "72656C6174696F6E7368697050726F66696C65"
-Global $IPATTERNBANNERR[1] = ["78656C6174696F6E7368697050726F66696C65"]
-Global $IPATTERNPROFILE_EXPIREDS = "85C075(.{10})75(.{2})B892010000E9"
-Global $IPATTERNPROFILE_EXPIREDR[5] = ["31C075", "004883FF0F", "75", "00", "B800000000E9"]
-Global $IPATTERNCMPEAX61S = "8B(.{2})85C074(.{2})83F80674(.{4})83(.{4})007D"
-Global $IPATTERNCMPEAX61R[9] = ["C7", "??", "030000", "00", "83F80674", "00??", "83", "????", "00EB"]
-Global $IPATTERNCMPEAX62S = "8B(.{2})85C074(.{2})83F80674(.{4})83(.{6})007D"
-Global $IPATTERNCMPEAX62R[9] = ["C7", "??", "030000", "00", "83F80674", "00??", "83", "??????", "00EB"]
-Global $IPATTERNCMPEAX63S = "8B(.{4})85C074(.{2})83F80674(.{4})83(.{4})007D"
-Global $IPATTERNCMPEAX63R[9] = ["C7", "????", "030000", "00", "83F80674", "00??", "83", "????", "00EB"]
-Global $IPATTERNCMPEAX64S = "8B(.{4})85C074(.{2})83F80674(.{4})83(.{6})007D"
-Global $IPATTERNCMPEAX64R[9] = ["C7", "????", "030000", "00", "83F80674", "00??", "83", "??????", "00EB"]
-Global $IPATTERNPROCESSV2PROFILE1AS = "00007504488D4850"
-Global $IPATTERNPROCESSV2PROFILE1AR[1] = ["00007500488D4850"]
-Global $IPATTERNPROCESSV2PROFILE1A1S = "00007504488D5050"
-Global $IPATTERNPROCESSV2PROFILE1A1R[1] = ["00007500488D5050"]
-Global $IPATTERNVALIDATELICENSES = "83F80175(.{2})BA94010000"
-Global $IPATTERNVALIDATELICENSER[3] = ["83F80175", "??", "BA00000000"]
-Global $IPATTERNVALIDATELICENSE1S = "83F8040F95C281C293010000"
-Global $IPATTERNVALIDATELICENSE1R[1] = ["83F8040F95C2BA0000000090"]
-Global $IPATTERNVALIDATELICENSE2S = "83F8040F95C181C193010000"
-Global $IPATTERNVALIDATELICENSE2R[1] = ["83F8040F95C1B90000000090"]
-Global $IPATTERNBRIDGECAMRAW1S = "84C074(.{2})8B(.{2})83(.{2})0174(.{2})83(.{2})0174(.{2})83(.{2})01"
-Global $IPATTERNBRIDGECAMRAW1R[15] = ["84C074", "??", "8B", "??", "83", "??", "01EB", "??", "83", "??", "0174", "??", "83", "??", "01"]
-Global $IPATTERNBRIDGECAMRAW2S = "4084F60F85(.{8})4084ED0F84"
-Global $IPATTERNBRIDGECAMRAW2R[3] = ["4084F60F85", "????????", "40FEC60F85"]
-Global $IPATTERNHEVCMPEGENABLER1S = "8B(.{2})FF50100FB6"
-Global $IPATTERNHEVCMPEGENABLER1R[3] = ["8B", "??", "FFC0900FB6"]
-Global $IPATTERNHEVCMPEGENABLER2S = "8B(.{2})FF50280FB6"
-Global $IPATTERNHEVCMPEGENABLER2R[3] = ["8B", "??", "FFC0900FB6"]
-Global $IPATTERNHEVCMPEGENABLER3S = "8B(.{2})FF50300FB6"
-Global $IPATTERNHEVCMPEGENABLER3R[3] = ["8B", "??", "FFC0900FB6"]
-Global $IPATTERNHEVCMPEGENABLER4S = "8B(.{2})FF50380FB6"
-Global $IPATTERNHEVCMPEGENABLER4R[3] = ["8B", "??", "FFC0900FB6"]
-Global $IPATTERNHEVCMPEGENABLER5S = "8B(.{2})FF5010(.{2})0FB6"
-Global $IPATTERNHEVCMPEGENABLER5R[5] = ["8B", "??", "FFC090", "??", "0FB6"]
-Global $IPATTERNHEVCMPEGENABLER6S = "8B(.{2})FF5028(.{2})0FB6"
-Global $IPATTERNHEVCMPEGENABLER6R[5] = ["8B", "??", "FFC090", "??", "0FB6"]
-Global $IPATTERNHEVCMPEGENABLER7S = "8B(.{2})FF5030(.{2})0FB6"
-Global $IPATTERNHEVCMPEGENABLER7R[5] = ["8B", "??", "FFC090", "??", "0FB6"]
-Global $IPATTERNHEVCMPEGENABLER8S = "8B(.{2})FF5038(.{2})0FB6"
-Global $IPATTERNHEVCMPEGENABLER8R[5] = ["8B", "??", "FFC090", "??", "0FB6"]
-Global $IPATTERNTEAMPROJECTENABLERAS = "488379(.{4})740A488379(.{4})7403B001C332C0C3"
-Global $IPATTERNTEAMPROJECTENABLERAR[5] = ["488379", "????", "740A488379", "????", "7403B001C3B001C3"]
+Global $Patch_BannerS                 =  "72656C6174696F6E7368697050726F66696C65"
+Global $Patch_BannerR[1]              = ["78656C6174696F6E7368697050726F66696C65"]
+;                                         ^^
+
+; 72 65                   jb     0x67
+; 78 65                   js     0x67
+; 6c                      ins    BYTE PTR es:[edi],dx
+; 61                      popa
+; 74 69                   je     0x6f
+; 6f                      outs   dx,DWORD PTR ds:[esi]
+; 6e                      outs   dx,BYTE PTR ds:[esi]
+; 73 68                   jae    0x72
+; 69 70 50 72 6f 66 69    imul   esi,DWORD PTR [eax+0x50],0x69666f72
+; 6c                      ins    BYTE PTR es:[edi],dx
+; 65                      gs
+
+Global $Patch_Profile_ExpiredS        =  "85C075(.{10})"        +"75(..)"   +"B892010000E9"
+Global $Patch_Profile_ExpiredR[5]     = ["31C075", "004883FF0F", "75", "00", "B800000000E9"]
+; 85 c0                   test   eax,eax
+; 75                      jne    0x
+
+; 00 48 83                add    BYTE PTR [eax-0x7d],cl
+; ff 0f                   dec    DWORD PTR [edi]
+
+; b8 92 01 00 00          mov    eax,0x192
+; e9                      jmp    0x
+
+
+; 31 c0                   xor    eax,eax
+
+
+Global $Patch_CmpEax61S               =  "8B(..)" +"85C074(..)" +"83F80674(....)"   +"83(....)"   +"007D"
+Global $Patch_CmpEax61R[9]            = ["C7", "??", "030000", "00", "83F80674", "00??", "83", "????", "00EB"]
+
+Global $Patch_CmpEax62S               =  "8B(..)85C074(..)83F80674(....)83(.{6})007D"
+Global $Patch_CmpEax62R[9]            = ["C7", "??", "030000", "00", "83F80674", "00??", "83", "??????", "00EB"]
+
+Global $Patch_CmpEax63S               =  "8B(....)85C074(..)83F80674(....)83(....)007D"
+Global $Patch_CmpEax63R[9]            = ["C7", "????", "030000", "00", "83F80674", "00??", "83", "????", "00EB"]
+
+Global $Patch_CmpEax64S               =  "8B(....)85C074(..)83F80674(....)83(.{6})007D"
+Global $Patch_CmpEax64R[9]            = ["C7", "????", "030000", "00", "83F80674", "00??", "83", "??????", "00EB"]
+; 8b ??                   mov    edx,DWORD PTR [ecx]
+; ?? 85 c0 74 11 22       ???    al,BYTE PTR [ebp+0x221174c0]
+; 83 f8 06                cmp    eax,0x6
+; 74 11                   je     0x
+; ?? ??                   ?? ??
+; ??                      ??
+; 83 11 ??                adc    DWORD PTR [ecx],??
+; ?? ?? 00 7d             ???
+
+
+Global $Patch_ProcessV2Profile1AS     =  "00007504488D4850"
+Global $Patch_ProcessV2Profile1AR[1]  = ["00007500488D4850"]
+;                                                ^^
+Global $Patch_ProcessV2Profile1A1S    =  "00007504488D5050"
+Global $Patch_ProcessV2Profile1A1R[1] = ["00007500488D5050"]
+;                                                ^^
+; 00 00                   add    BYTE PTR [eax],al
+; 75 04                   jne    0x8   =>0x48
+; 48                      dec    eax
+; 8d 48 50                lea    ecx,[eax+0x50]
+; 8d 50 50                lea    edx,[eax+0x50]
+
+
+Global $Patch_ValidateLicenseS        =  "83F80175(..)"   +"BA94010000"
+Global $Patch_ValidateLicenseR[3]     = ["83F80175", "??", "BA00000000"]
+; 83 f8 01                cmp    eax,0x1
+; 75 xx                   jne    0x
+; ba 94 01 00 00          mov    edx,0x194
+
+Global $Patch_ValidateLicense_edx_S   =  "83F8040F95C281C293010000"
+Global $Patch_ValidateLicense_edx_R[1]= ["83F8040F95C2BA0000000090"]
+;                                                         ^^^^^^^^^^^^
+Global $Patch_ValidateLicense_ecx_S   =  "83F8040F95C181C193010000"
+Global $Patch_ValidateLicense_ecx_R[1]= ["83F8040F95C1B90000000090"]
+; 83 f8 04                cmp    eax,0x4
+; 0f 95 c1                setne  cl
+; 81 c1 93 01 00 00       add    ecx,0x193
+; ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+; b9 00 00 00 00          mov    ecx,0x0
+; 90                      nop
+
+
+Global $Patch_BridgeCamRaw1S          =  "84C074(..)8B(..)83(..)0174(..)83(..)0174(..)83(..)01"
+Global $Patch_BridgeCamRaw1R[15]      = ["84C074", "??", "8B", "??", "83", "??", "01EB", "??", "83", "??", "0174", "??", "83", "??", "01"]
+
+Global $Patch_BridgeCamRaw2S          =  "4084F60F85(.{8})"       +"4084ED0F84"
+Global $Patch_BridgeCamRaw2R[3]       = ["4084F60F85", "????????", "40FEC60F85"]
+;~ 40                      inc    eax
+;~ 84 f6                   test   dh,dh
+;~ 0f 85 11 22 33 44       jne    0x4433221a
+;~ 40                      inc    eax
+;~ 84 ed                   test   ch,ch
+; ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+;~ fe c6                   inc    dh
+
+;~ 0f 84                   je    0x
+; ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+;~ 0f 85                   jne   0x
+
+
+; SweetPeaSupport.dll
+Global $Patch_HevcMpegEnabler1S       =  "8B(..)FF50100FB6"
+Global $Patch_HevcMpegEnabler1R[3]    = ["8B", "??", "FFC0900FB6"]
+;~ 8b 11                   mov    edx,DWORD PTR [ecx]
+;~ ff 50 10                call   DWORD PTR [eax+0x10]
+;~ 0f                      .byte 0xf
+;~ b6                      .byte 0xb6
+
+Global $Patch_HevcMpegEnabler2S       =  "8B(..)FF50280FB6"
+Global $Patch_HevcMpegEnabler2R[3]    = ["8B", "??", "FFC0900FB6"]
+
+Global $Patch_HevcMpegEnabler3S       =  "8B(..)FF50300FB6"
+Global $Patch_HevcMpegEnabler3R[3]    = ["8B", "??", "FFC0900FB6"]
+
+Global $Patch_HevcMpegEnabler4S       =  "8B(..)FF50380FB6"
+Global $Patch_HevcMpegEnabler4R[3]    = ["8B", "??", "FFC0900FB6"]
+
+Global $Patch_HevcMpegEnabler5S       =  "8B(..)FF5010(..)0FB6"
+Global $Patch_HevcMpegEnabler5R[5]    = ["8B", "??", "FFC090", "??", "0FB6"]
+
+Global $Patch_HevcMpegEnabler6S       =  "8B(..)FF5028(..)0FB6"
+Global $Patch_HevcMpegEnabler6R[5]    = ["8B", "??", "FFC090", "??", "0FB6"]
+
+Global $Patch_HevcMpegEnabler7S       =  "8B(..)FF5030(..)0FB6"
+Global $Patch_HevcMpegEnabler7R[5]    = ["8B", "??", "FFC090", "??", "0FB6"]
+
+Global $Patch_HevcMpegEnabler8S       =  "8B(..)FF5038(..)0FB6"
+Global $Patch_HevcMpegEnabler8R[5]    = ["8B", "??", "FFC090", "??", "0FB6"]
+
+; dvaappsupport.dll
+Global $Patch_TeamProjectEnablerAS    =  "488379(....)740A488379(....)7403B001C332C0C3"
+Global $Patch_TeamProjectEnablerAR[5] = ["488379", "????", "740A488379", "????", "7403B001C3B001C3"]
 
 #include <Misc.au3>
 #include <GUIConstants.au3>
@@ -84,9 +174,9 @@ Global $FilesToPatch[0][1], $FilesToPatchNULL[0][1]
 Global $FilesToRestore[0][1]
 Global $MYHGUI, $IDMSG, $IDLISTVIEW, $IDBUTTON_SEARCH, $IDBUTTONCUSTOMFOLDER, $IDBTNCURE, $TIMESTAMP
 Global $MYDEFPATH = "C:\Program Files\Adobe"
-Global $MYREGEXPGLOBALPATTERNSEARCHCOUNT = 0, $COUNT = 0, $MYOWNIDPROGRESS
-Global $AOUTHEXGLOBALARRAY[0], $ANULLARRAY[0], $AINHEXARRAY[0]
-Global $MYFILETOPARSE = "", $MYFILETOPARSSWEATPEA = "", $MYFILETOPARSEEACLIENT = ""
+Global $RegExp_SearchCOUNT = 0, $COUNT = 0, $MYOWNIDPROGRESS
+Global $aOutTheGlobalArray[0], $ANULLARRAY[0], $AINHEXARRAY[0]
+Global $Data = "", $MYFILETOPARSSWEATPEA = "", $DataEACLIENT = ""
 MAINGUI()
 WinWait( $g_AppWndTitle , "", 5)
 dim $HWNDPARENTWINDOW = WinGetHandle( $g_AppWndTitle )
@@ -137,6 +227,7 @@ While 1
 			For $II = 0 To _GUICtrlListView_GetItemCount($IDLISTVIEW) - 1
 				_GUICtrlListView_SetItemChecked($IDLISTVIEW, $II)
 			Next
+
 			GUICtrlSetState($IDLISTVIEW, $GUI_ENABLE)
 			GUICtrlSetState($IDBUTTON_SEARCH, $GUI_ENABLE)
 			GUICtrlSetState($IDBTNCURE, $GUI_ENABLE)
@@ -162,7 +253,8 @@ While 1
 					MEMOWRITE("Current path" & @CRLF & "---" & @CRLF & $ITEMFROMLIST & @CRLF & "---" & @CRLF & "medication :)")
 					Sleep(100)
 					_GUICtrlListView_Scroll($IDLISTVIEW, 0, -10000)
-					MYGLOBALPATTERNPATCH(_GUICtrlListView_GetItemText($IDLISTVIEW, $II, 1), $AOUTHEXGLOBALARRAY)
+					MyGlobalPatternPatch(_GUICtrlListView_GetItemText($IDLISTVIEW, $II, 1), $aOutTheGlobalArray)
+
 					_GUICtrlListView_Scroll($IDLISTVIEW, 0, 10)
 					Sleep(100)
 				EndIf
@@ -243,7 +335,7 @@ Func RecursiveFileSearch($INSTARTDIR, $DEPTH, $FILECOUNT)
 	;_FileListToArrayEx
 
 
-	Dim $RecursiveFileSearch_MaxDeep = 6
+	Dim $RecursiveFileSearch_MaxDeep = 1
 	Dim $RecursiveFileSearch_WhenFoundRaiseToLevel = 0  ;0 to disable raising
 	if $DEPTH > $RecursiveFileSearch_MaxDeep then return
 
@@ -444,77 +536,77 @@ Func ShowEscMessage()
 
 EndFunc   ;==>ShowEscMessage
 
-Func MYGLOBALPATTERNSEARCH($MYFILETOPARSE)
+Func MYGLOBALPATTERNSEARCH($Data)
 	Sleep(100)
 
-	ConsoleWrite($MYFILETOPARSE & @CRLF)
+	ConsoleWrite($Data & @CRLF)
 
 	$AINHEXARRAY = $ANULLARRAY
-	$AOUTHEXGLOBALARRAY = $ANULLARRAY
+	$aOutTheGlobalArray = $ANULLARRAY
 	ProgressWrite(0)
 
-	$MYREGEXPGLOBALPATTERNSEARCHCOUNT = 0
+	$RegExp_SearchCOUNT = 0
 	$COUNT = 15
-	MEMOWRITE( $MYFILETOPARSE & @CRLF & _
+	MEMOWRITE( $Data & @CRLF & _
 				"---" & @CRLF & _
 				"Preparing to Analyze" & @CRLF & _
 				"---" & @CRLF & _
 				"*****" _
 	)
-	If  StringInStr($MYFILETOPARSE, "AppsPanelBL.dll"  		) > 0 Or _
-		StringInStr($MYFILETOPARSE, "SweetPeaSupport.dll"	) > 0 Or _
-		StringInStr($MYFILETOPARSE, "dvaappsupport.dll"		) > 0 Or _
-		StringInStr($MYFILETOPARSE, "bridge.exe"			) > 0 Then
+	If  StringInStr($Data, "AppsPanelBL.dll"  		) > 0 Or _
+		StringInStr($Data, "SweetPeaSupport.dll"	) > 0 Or _
+		StringInStr($Data, "dvaappsupport.dll"		) > 0 Or _
+		StringInStr($Data, "bridge.exe"			) > 0 Then
 
-		If StringInStr($MYFILETOPARSE, "AppsPanelBL.dll") > 0 Then
+		If StringInStr($Data, "AppsPanelBL.dll") > 0 Then
 			MsgBox($MB_SYSTEMMODAL, "Ups...", "Not Implemented")
 		EndIf
 
-		If StringInStr($MYFILETOPARSE, "SweetPeaSupport.dll") > 0 Then
-			MYREGEXPGLOBALPATTERNSEARCH($MYFILETOPARSE, $IPATTERNHEVCMPEGENABLER1S, $IPATTERNHEVCMPEGENABLER1R, "$iPatternHevcMpegEnabler1S")
-			MYREGEXPGLOBALPATTERNSEARCH($MYFILETOPARSE, $IPATTERNHEVCMPEGENABLER2S, $IPATTERNHEVCMPEGENABLER2R, "$iPatternHevcMpegEnabler2S")
-			MYREGEXPGLOBALPATTERNSEARCH($MYFILETOPARSE, $IPATTERNHEVCMPEGENABLER3S, $IPATTERNHEVCMPEGENABLER3R, "$iPatternHevcMpegEnabler3S")
-			MYREGEXPGLOBALPATTERNSEARCH($MYFILETOPARSE, $IPATTERNHEVCMPEGENABLER4S, $IPATTERNHEVCMPEGENABLER4R, "$iPatternHevcMpegEnabler4S")
-			MYREGEXPGLOBALPATTERNSEARCH($MYFILETOPARSE, $IPATTERNHEVCMPEGENABLER5S, $IPATTERNHEVCMPEGENABLER5R, "$iPatternHevcMpegEnabler5S")
-			MYREGEXPGLOBALPATTERNSEARCH($MYFILETOPARSE, $IPATTERNHEVCMPEGENABLER6S, $IPATTERNHEVCMPEGENABLER6R, "$iPatternHevcMpegEnabler6S")
-			MYREGEXPGLOBALPATTERNSEARCH($MYFILETOPARSE, $IPATTERNHEVCMPEGENABLER7S, $IPATTERNHEVCMPEGENABLER7R, "$iPatternHevcMpegEnabler7S")
-			MYREGEXPGLOBALPATTERNSEARCH($MYFILETOPARSE, $IPATTERNHEVCMPEGENABLER8S, $IPATTERNHEVCMPEGENABLER8R, "$iPatternHevcMpegEnabler8S")
+		If StringInStr($Data, "SweetPeaSupport.dll") > 0 Then
+			RegExp_Search($Data, $Patch_HevcMpegEnabler1S, $Patch_HevcMpegEnabler1R, "$Patch_HevcMpegEnabler1S")
+			RegExp_Search($Data, $Patch_HevcMpegEnabler2S, $Patch_HevcMpegEnabler2R, "$Patch_HevcMpegEnabler2S")
+			RegExp_Search($Data, $Patch_HevcMpegEnabler3S, $Patch_HevcMpegEnabler3R, "$Patch_HevcMpegEnabler3S")
+			RegExp_Search($Data, $Patch_HevcMpegEnabler4S, $Patch_HevcMpegEnabler4R, "$Patch_HevcMpegEnabler4S")
+			RegExp_Search($Data, $Patch_HevcMpegEnabler5S, $Patch_HevcMpegEnabler5R, "$Patch_HevcMpegEnabler5S")
+			RegExp_Search($Data, $Patch_HevcMpegEnabler6S, $Patch_HevcMpegEnabler6R, "$Patch_HevcMpegEnabler6S")
+			RegExp_Search($Data, $Patch_HevcMpegEnabler7S, $Patch_HevcMpegEnabler7R, "$Patch_HevcMpegEnabler7S")
+			RegExp_Search($Data, $Patch_HevcMpegEnabler8S, $Patch_HevcMpegEnabler8R, "$Patch_HevcMpegEnabler8S")
 		EndIf
 
-		If StringInStr($MYFILETOPARSE, "dvaappsupport.dll") > 0 Then
-			MYREGEXPGLOBALPATTERNSEARCH($MYFILETOPARSE, $IPATTERNTEAMPROJECTENABLERAS, $IPATTERNTEAMPROJECTENABLERAR, "$iPatternTeamProjectEnablerAS")
+		If StringInStr($Data, "dvaappsupport.dll") > 0 Then
+			RegExp_Search($Data, $Patch_TeamProjectEnablerAS, $Patch_TeamProjectEnablerAR, "$Patch_TeamProjectEnablerAS")
 		EndIf
 
-		If StringInStr($MYFILETOPARSE, "bridge.exe") > 0 Then
+		If StringInStr($Data, "bridge.exe") > 0 Then
 
-			MYREGEXPGLOBALPATTERNSEARCH($MYFILETOPARSE, $IPATTERNPROFILE_EXPIREDS, $IPATTERNPROFILE_EXPIREDR, "$iPatternPROFILE_EXPIREDS")
+			RegExp_Search($Data, $Patch_Profile_ExpiredS, $Patch_Profile_ExpiredR, "$Patch_Profile_ExpiredS")
 
-			If UBound($AOUTHEXGLOBALARRAY) > 0 Then
-				MYREGEXPGLOBALPATTERNSEARCH($MYFILETOPARSE, $IPATTERNVALIDATELICENSES, $IPATTERNVALIDATELICENSER, "$iPatternValidateLicenseS")
-				MYREGEXPGLOBALPATTERNSEARCH($MYFILETOPARSE, $IPATTERNVALIDATELICENSE1S, $IPATTERNVALIDATELICENSE1R, "$iPatternValidateLicense1S")
-				MYREGEXPGLOBALPATTERNSEARCH($MYFILETOPARSE, $IPATTERNVALIDATELICENSE2S, $IPATTERNVALIDATELICENSE2R, "$iPatternValidateLicense2S")
-				MYREGEXPGLOBALPATTERNSEARCH($MYFILETOPARSE, $IPATTERNCMPEAX61S, $IPATTERNCMPEAX61R, "$iPatternCmpEax61S")
-				MYREGEXPGLOBALPATTERNSEARCH($MYFILETOPARSE, $IPATTERNCMPEAX62S, $IPATTERNCMPEAX62R, "$iPatternCmpEax62S")
-				MYREGEXPGLOBALPATTERNSEARCH($MYFILETOPARSE, $IPATTERNCMPEAX63S, $IPATTERNCMPEAX63R, "$iPatternCmpEax63S")
-				MYREGEXPGLOBALPATTERNSEARCH($MYFILETOPARSE, $IPATTERNCMPEAX64S, $IPATTERNCMPEAX64R, "$iPatternCmpEax64S")
-				MYREGEXPGLOBALPATTERNSEARCH($MYFILETOPARSE, $IPATTERNPROCESSV2PROFILE1AS, $IPATTERNPROCESSV2PROFILE1AR, "$iPatternProcessV2Profile1aS")
-				MYREGEXPGLOBALPATTERNSEARCH($MYFILETOPARSE, $IPATTERNPROCESSV2PROFILE1A1S, $IPATTERNPROCESSV2PROFILE1A1R, "$iPatternProcessV2Profile1a1S")
-				MYREGEXPGLOBALPATTERNSEARCH($MYFILETOPARSE, $IPATTERNBANNERS, $IPATTERNBANNERR, "$iPatternBannerS")
-				MYREGEXPGLOBALPATTERNSEARCH($MYFILETOPARSE, $IPATTERNBRIDGECAMRAW1S, $IPATTERNBRIDGECAMRAW1R, "$iPatternBridgeCamRaw1S")
-				MYREGEXPGLOBALPATTERNSEARCH($MYFILETOPARSE, $IPATTERNBRIDGECAMRAW2S, $IPATTERNBRIDGECAMRAW2R, "$iPatternBridgeCamRaw2S")
-				_ArrayDisplay($AOUTHEXGLOBALARRAY, "Global Search Check")
-				$MYREGEXPGLOBALPATTERNSEARCHCOUNT = 0
+			If UBound($aOutTheGlobalArray) > 0 Then
+				RegExp_Search($Data, $Patch_ValidateLicenseS, $Patch_ValidateLicenseR, "$Patch_ValidateLicenseS")
+				RegExp_Search($Data, $Patch_ValidateLicense_edx_S, $Patch_ValidateLicense_edx_R, "$Patch_ValidateLicense_edx_S")
+				RegExp_Search($Data, $Patch_ValidateLicense_ecx_S, $Patch_ValidateLicense_ecx_R, "$Patch_ValidateLicense_ecx_S")
+				RegExp_Search($Data, $Patch_CmpEax61S, $Patch_CmpEax61R, "$Patch_CmpEax61S")
+				RegExp_Search($Data, $Patch_CmpEax62S, $Patch_CmpEax62R, "$Patch_CmpEax62S")
+				RegExp_Search($Data, $Patch_CmpEax63S, $Patch_CmpEax63R, "$Patch_CmpEax63S")
+				RegExp_Search($Data, $Patch_CmpEax64S, $Patch_CmpEax64R, "$Patch_CmpEax64S")
+				RegExp_Search($Data, $Patch_ProcessV2Profile1AS, $Patch_ProcessV2Profile1AR, "$Patch_ProcessV2Profile1aS")
+				RegExp_Search($Data, $Patch_ProcessV2Profile1A1S, $Patch_ProcessV2Profile1A1R, "$Patch_ProcessV2Profile1a1S")
+				RegExp_Search($Data, $Patch_BannerS, $Patch_BannerR, "$Patch_BannerS")
+				RegExp_Search($Data, $Patch_BridgeCamRaw1S, $Patch_BridgeCamRaw1R, "$Patch_BridgeCamRaw1S")
+				RegExp_Search($Data, $Patch_BridgeCamRaw2S, $Patch_BridgeCamRaw2R, "$Patch_BridgeCamRaw2S")
+;~ 				_ArrayDisplay($aOutTheGlobalArray, "Global Search Check")
+				$RegExp_SearchCOUNT = 0
 				$COUNT = 0
 				ProgressWrite(0)
 			Else
-				MEMOWRITE(	$MYFILETOPARSE & @CRLF & _
+				MEMOWRITE(	$Data & @CRLF & _
 							"---" & @CRLF & _
 							"File was already patched?. Aborting..." & @CRLF & _
 							"---" _
 				)
 				Sleep(100)
 
-				$MYREGEXPGLOBALPATTERNSEARCHCOUNT = 0
+				$RegExp_SearchCOUNT = 0
 				$COUNT = 0
 				ProgressWrite(0)
 			EndIf
@@ -522,40 +614,41 @@ Func MYGLOBALPATTERNSEARCH($MYFILETOPARSE)
 		EndIf
 	Else
 
-		MYREGEXPGLOBALPATTERNSEARCH($MYFILETOPARSE, $IPATTERNPROFILE_EXPIREDS, $IPATTERNPROFILE_EXPIREDR, "$iPatternPROFILE_EXPIREDS")
+		RegExp_Search($Data, $Patch_Profile_ExpiredS, $Patch_Profile_ExpiredR, "$Patch_Profile_ExpiredS")
 
-		If UBound($AOUTHEXGLOBALARRAY) > 0 Then
-			MYREGEXPGLOBALPATTERNSEARCH($MYFILETOPARSE, $IPATTERNVALIDATELICENSES, $IPATTERNVALIDATELICENSER, "$iPatternValidateLicenseS")
-			MYREGEXPGLOBALPATTERNSEARCH($MYFILETOPARSE, $IPATTERNVALIDATELICENSE1S, $IPATTERNVALIDATELICENSE1R, "$iPatternValidateLicense1S")
-			MYREGEXPGLOBALPATTERNSEARCH($MYFILETOPARSE, $IPATTERNVALIDATELICENSE2S, $IPATTERNVALIDATELICENSE2R, "$iPatternValidateLicense2S")
-			MYREGEXPGLOBALPATTERNSEARCH($MYFILETOPARSE, $IPATTERNCMPEAX61S, $IPATTERNCMPEAX61R, "$iPatternCmpEax61S")
-			MYREGEXPGLOBALPATTERNSEARCH($MYFILETOPARSE, $IPATTERNCMPEAX62S, $IPATTERNCMPEAX62R, "$iPatternCmpEax62S")
-			MYREGEXPGLOBALPATTERNSEARCH($MYFILETOPARSE, $IPATTERNCMPEAX63S, $IPATTERNCMPEAX63R, "$iPatternCmpEax63S")
-			MYREGEXPGLOBALPATTERNSEARCH($MYFILETOPARSE, $IPATTERNCMPEAX64S, $IPATTERNCMPEAX64R, "$iPatternCmpEax64S")
-			MYREGEXPGLOBALPATTERNSEARCH($MYFILETOPARSE, $IPATTERNPROCESSV2PROFILE1AS, $IPATTERNPROCESSV2PROFILE1AR, "$iPatternProcessV2Profile1aS")
-			MYREGEXPGLOBALPATTERNSEARCH($MYFILETOPARSE, $IPATTERNPROCESSV2PROFILE1A1S, $IPATTERNPROCESSV2PROFILE1A1R, "$iPatternProcessV2Profile1a1S")
-			MYREGEXPGLOBALPATTERNSEARCH($MYFILETOPARSE, $IPATTERNBANNERS, $IPATTERNBANNERR, "$iPatternBannerS")
-			$MYREGEXPGLOBALPATTERNSEARCHCOUNT = 0
+		If UBound($aOutTheGlobalArray) > 0 Then
+			RegExp_Search($Data, $Patch_ValidateLicenseS, $Patch_ValidateLicenseR, "$Patch_ValidateLicenseS")
+			RegExp_Search($Data, $Patch_ValidateLicense_edx_S, $Patch_ValidateLicense_edx_R, "$Patch_ValidateLicense_edx_S")
+			RegExp_Search($Data, $Patch_ValidateLicense_ecx_S, $Patch_ValidateLicense_ecx_R, "$Patch_ValidateLicense_ecx_S")
+			RegExp_Search($Data, $Patch_CmpEax61S, $Patch_CmpEax61R, "$Patch_CmpEax61S")
+			RegExp_Search($Data, $Patch_CmpEax62S, $Patch_CmpEax62R, "$Patch_CmpEax62S")
+			RegExp_Search($Data, $Patch_CmpEax63S, $Patch_CmpEax63R, "$Patch_CmpEax63S")
+			RegExp_Search($Data, $Patch_CmpEax64S, $Patch_CmpEax64R, "$Patch_CmpEax64S")
+			RegExp_Search($Data, $Patch_ProcessV2Profile1AS, $Patch_ProcessV2Profile1AR, "$Patch_ProcessV2Profile1aS")
+			RegExp_Search($Data, $Patch_ProcessV2Profile1A1S, $Patch_ProcessV2Profile1A1R, "$Patch_ProcessV2Profile1a1S")
+			RegExp_Search($Data, $Patch_BannerS, $Patch_BannerR, "$Patch_BannerS")
+			$RegExp_SearchCOUNT = 0
 			$COUNT = 0
 			ProgressWrite(0)
 		Else
-			MEMOWRITE(	$MYFILETOPARSE & @CRLF & _
+			MEMOWRITE(	$Data & @CRLF & _
 						"---" & @CRLF & _
 						"File was already patched?. Aborting..." & @CRLF & _
 						"---" _
 			)
 			Sleep(100)
-			$MYREGEXPGLOBALPATTERNSEARCHCOUNT = 0
+			$RegExp_SearchCOUNT = 0
 			$COUNT = 0
 			ProgressWrite(0)
 		EndIf
 	EndIf
 EndFunc   ;==>MYGLOBALPATTERNSEARCH
 
-Func MYREGEXPGLOBALPATTERNSEARCH($FILETOPARSE, $PATTERNTOSEARCH, $PATTERNTOREPLACE, $PATTERNNAME)
+Func RegExp_Search($FILETOPARSE, $PATTERNTOSEARCH, $PATTERNTOREPLACE, $PATTERNNAME)
 	Local $hFile = FileOpen($FILETOPARSE, $FO_READ + $FO_BINARY)
 	Local $FileData = FileRead($hFile)
-	Local $ISEARCHPATTERN = $PATTERNTOSEARCH
+
+	Local $ISEARCHPATTERN  = $PATTERNTOSEARCH
 	Local $IREPLACEPATTERN = $PATTERNTOREPLACE
 	Local $INEWSEARCHCONSTRUCT = "", $INEWREPLACECONSTRUCT = "", $INEWREPLACECONSTRUCT1 = ""
 	$AINHEXARRAY = StringRegExp($FileData, $ISEARCHPATTERN, $STR_REGEXPARRAYFULLMATCH, 1)
@@ -577,23 +670,26 @@ Func MYREGEXPGLOBALPATTERNSEARCH($FILETOPARSE, $PATTERNTOSEARCH, $PATTERNTOREPLA
 		Else
 			$INEWREPLACECONSTRUCT1 = $INEWREPLACECONSTRUCT
 		EndIf
-		_ArrayAdd($AOUTHEXGLOBALARRAY, $INEWSEARCHCONSTRUCT)
-		_ArrayAdd($AOUTHEXGLOBALARRAY, $INEWREPLACECONSTRUCT1)
-		ConsoleWrite($PATTERNNAME & "---" & @TAB & $INEWSEARCHCONSTRUCT & "	" & @CRLF)
+		_ArrayAdd($aOutTheGlobalArray, $INEWSEARCHCONSTRUCT)
+		_ArrayAdd($aOutTheGlobalArray, $INEWREPLACECONSTRUCT1)
+
+		ConsoleWrite($PATTERNNAME &      "---" & @TAB & $INEWSEARCHCONSTRUCT & "	" & @CRLF)
 		ConsoleWrite($PATTERNNAME & "R" & "--" & @TAB & $INEWREPLACECONSTRUCT1 & "	" & @CRLF)
-		MEMOWRITE($FILETOPARSE & @CRLF & "---" & @CRLF & $PATTERNNAME & @CRLF & "---" & @CRLF & $INEWSEARCHCONSTRUCT & @CRLF & $INEWREPLACECONSTRUCT1)
+		MEMOWRITE(   $FILETOPARSE & @CRLF & "---" & @CRLF & $PATTERNNAME & @CRLF & "---" & @CRLF & $INEWSEARCHCONSTRUCT & @CRLF & $INEWREPLACECONSTRUCT1)
 	Else
 		ConsoleWrite($PATTERNNAME & "---" & @TAB & "No" & "	" & @CRLF)
-		MEMOWRITE($FILETOPARSE & @CRLF & "---" & @CRLF & $PATTERNNAME & "---" & "No")
+		MEMOWRITE(   $FILETOPARSE & @CRLF & "---" & @CRLF & $PATTERNNAME & "---" & "No")
 	EndIf
-	$MYREGEXPGLOBALPATTERNSEARCHCOUNT += 1
-	FileClose($hFile)
-	$FileData = ""
-	ProgressWrite(Round($MYREGEXPGLOBALPATTERNSEARCHCOUNT / $COUNT * 100))
-	Sleep(100)
-EndFunc   ;==>MYREGEXPGLOBALPATTERNSEARCH
 
-Func MYGLOBALPATTERNPATCH( $FileToPatch , $MYARRAYTOPATCH)
+	$RegExp_SearchCOUNT += 1
+	FileClose($hFile)
+
+	$FileData = ""
+	ProgressWrite( Round($RegExp_SearchCOUNT / $COUNT * 100) )
+	Sleep(100)
+EndFunc   ;==>RegExp_Search
+
+Func MyGlobalPatternPatch( $FileToPatch , $MYARRAYTOPATCH)
 	ProgressWrite(0)
 
 	MEMOWRITE("Current path" & @CRLF & "---" & @CRLF &  $FileToPatch  & @CRLF & "---" & @CRLF & "medication :)")
@@ -631,6 +727,6 @@ Func MYGLOBALPATTERNPATCH( $FileToPatch , $MYARRAYTOPATCH)
 		Sleep(100)
 	Else
 	EndIf
-EndFunc   ;==>MYGLOBALPATTERNPATCH
+EndFunc   ;==>MyGlobalPatternPatch
 
 ; DeTokenise by myAut2Exe >The Open Source AutoIT/AutoHotKey script decompiler< 2.16 build(215)
