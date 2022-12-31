@@ -170,110 +170,150 @@ If _Singleton( $g_AppWndTitle , 1) = 0 Then
 	Exit
 EndIf
 
-Global $FilesToPatch[0][1], $FilesToPatchNULL[0][1]
-Global $FilesToRestore[0][1]
-Global $MYHGUI, $IDMSG, $IDLISTVIEW, $IDBUTTON_SEARCH, $IDBUTTONCUSTOMFOLDER, $IDBTNCURE, $TIMESTAMP
-Global $MYDEFPATH = "C:\Program Files\Adobe"
-Global $RegExp_SearchCOUNT = 0, $COUNT = 0, $MYOWNIDPROGRESS
-Global $aOutTheGlobalArray[0], $ANULLARRAY[0], $AINHEXARRAY[0]
-Global $Data = "", $MYFILETOPARSSWEATPEA = "", $DataEACLIENT = ""
-MAINGUI()
+Global $FilesToPatch     [0][1]
+Global $FilesToPatchNULL [0][1]
+Global $FilesToRestore   [0][1]
+Global $MYHGUI, $IDMSG, $IDLISTVIEW, $IDBUTTON_Search, $IDBUTTONCUSTOMFOLDER, $IDBTNCURE, $TimeStamp
+
+Global $ProgramFilesDir = EnvGet('ProgramW6432') ; for 64bit Win it will return a valid path.
+if not $ProgramFilesDir then $ProgramFilesDir = @ProgramFilesDir ; for 32bit Win this will "repair" the broken return from above.
+
+Global $Path_Default          =  $ProgramFilesDir & "\Adobe"
+
+Global $RegExp_SearchCOUNT = 0, $COUNT = 0, $GUI_Progressbar
+Global $aOutTheGlobalArray[0], $ANullArray[0], $aInHexArray[0]
+Global $Data               = "", $MYFILETOPARSSWEATPEA = "", $DataEACLIENT = ""
+Global $ProgressFileCountScale = 1
+
+Global $RecursiveFileSearch_MaxDeep = 7
+
+Func App_Quit()
+	ConsoleWrite('@@ (190) :(' & @MIN & ':' & @SEC & ') App_Quit()' & @CR) ;### Trace Function
+
+;~ 	Local $SPIDHANDLE = ProcessExists("GenPPP-3.0.exe")
+;~ 	ProcessClose($SPIDHANDLE)
+
+;~ 	_GUICtrlListView_DeleteAllItems(GUICtrlGetHandle($IDLISTVIEW))
+;~ 	GUIDelete()
+
+	Exit
+
+EndFunc
+
+
+Gui_Main_Create()
+	ConsoleWrite('@@ (201) :(' & @MIN & ':' & @SEC & ') Gui_Main_Create()' & @CR) ;### Trace Function
+
+Gui_Main_Init()
+
 WinWait( $g_AppWndTitle , "", 5)
+
 dim $HWNDPARENTWINDOW = WinGetHandle( $g_AppWndTitle )
 dim $HWND_PROGRESS = ControlGetHandle($HWNDPARENTWINDOW, "", "msctls_progress321")
 While 1
-	$IDMSG = GUIGetMsg()
+
+    $IDMSG = GUIGetMsg()
+
 	Switch $IDMSG
 
 		Case $GUI_EVENT_CLOSE
-			Local $SPIDHANDLE = ProcessExists("GenPPP-3.0.exe")
-			ProcessClose($SPIDHANDLE)
-			_GUICtrlListView_DeleteAllItems(GUICtrlGetHandle($IDLISTVIEW))
-			GUIDelete()
-			Exit
 
-		Case $IDBUTTON_SEARCH
-			GUICtrlSetState($IDLISTVIEW, $GUI_DISABLE)
-			GUICtrlSetState($IDBUTTON_SEARCH, $GUI_DISABLE)
-			GUICtrlSetState($IDBTNCURE, $GUI_DISABLE)
-			GUICtrlSetState($IDBUTTONCUSTOMFOLDER, $GUI_DISABLE)
-			_GUICtrlListView_DeleteAllItems(GUICtrlGetHandle($IDLISTVIEW))
-			_GUICtrlListView_AddItem($IDLISTVIEW, "", 0)
-			_GUICtrlListView_AddItem($IDLISTVIEW, "", 1)
-			_GUICtrlListView_AddSubItem($IDLISTVIEW, 0, "Searching for files. Be patient, please", 1)
-			_GUICtrlListView_AddSubItem($IDLISTVIEW, 1, "Press 'Esc' to terminate GenP if you want", 1)
+			App_Quit()
+
+
+		Case $IDBUTTONCUSTOMFOLDER
+			myFileOpenDialog()
+			GUICtrlSetState($IDBUTTON_Search, $GUI_FOCUS)
+
+
+		Case $IDBUTTON_Search
+
+            Gui_State( $GUI_DISABLE )
+
+			Local $tmp[2] = [ _
+			"Searching for files. Be patient, please", _
+			"Press 'Esc' to terminate GenP if you want" _
+			]
+			ListView_Text( $tmp )
 
 			; Clear previous results
 			$FilesToPatch   = $FilesToPatchNULL
 			$FilesToRestore = $FilesToPatchNULL
 
-			$TIMESTAMP = TimerInit()
-			Local $ASIZE = DirGetSize($MYDEFPATH, $DIR_EXTENDED)
-			local $FileCount= $ASIZE[1]
+			$TimeStamp          = TimerInit()
 
-
-			Global $ProgressFileCountScale = 100 / $FileCount
+			MemoWrite ("Counting files ...")
+			local $FileCount         = DirGetSize( $Path_Default, $DIR_EXTENDED ) [1]
+															;[0] = Size;   [1] = Files count ;[2] = Dirs Count
 			Global $FileSearchedCount = 0
 
-			ProgressWrite(0)
-			RecursiveFileSearch($MYDEFPATH, 0, $ASIZE[1])
+			ProgressInit( 100 / $FileCount )
+			RecursiveFileSearch( $Path_Default, 0, $FileCount )
 
-			Sleep(100)
-			ProgressWrite(0)
+			ProgressDone( )
 
-			_GUICtrlListView_DeleteAllItems(GUICtrlGetHandle($IDLISTVIEW))
 
 			FillListViewWithFiles()
-			For $II = 0 To _GUICtrlListView_GetItemCount($IDLISTVIEW) - 1
-				_GUICtrlListView_SetItemChecked($IDLISTVIEW, $II)
-			Next
 
-			GUICtrlSetState($IDLISTVIEW, $GUI_ENABLE)
-			GUICtrlSetState($IDBUTTON_SEARCH, $GUI_ENABLE)
-			GUICtrlSetState($IDBTNCURE, $GUI_ENABLE)
-			GUICtrlSetState($IDBUTTONCUSTOMFOLDER, $GUI_ENABLE)
-			GUICtrlSetState($IDBTNCURE, 256)
+            Gui_State( $GUI_ENABLE )
 
-		Case $IDBUTTONCUSTOMFOLDER
-			MYFILEOPENDIALOG()
-			GUICtrlSetState($IDBUTTON_SEARCH, 256)
+			GUICtrlSetState( $IDBTNCURE, $GUI_FOCUS)
+
 
 		Case $IDBTNCURE
-			GUICtrlSetState($IDLISTVIEW, $GUI_DISABLE)
-			GUICtrlSetState($IDBUTTON_SEARCH, $GUI_DISABLE)
-			GUICtrlSetState($IDBTNCURE, $GUI_DISABLE)
-			GUICtrlSetState($IDBUTTONCUSTOMFOLDER, $GUI_DISABLE)
-			For $II = 0 To _GUICtrlListView_GetItemCount($IDLISTVIEW) - 1
-				If _GUICtrlListView_GetItemChecked($IDLISTVIEW, $II) = True Then
-					_GUICtrlListView_SetItemSelected($IDLISTVIEW, $II)
-					Local $ITEMFROMLIST = _GUICtrlListView_GetItemText($IDLISTVIEW, $II, 1)
-					MYGLOBALPATTERNSEARCH($ITEMFROMLIST)
-					ProgressWrite(0)
-					Sleep(100)
-					MEMOWRITE("Current path" & @CRLF & "---" & @CRLF & $ITEMFROMLIST & @CRLF & "---" & @CRLF & "medication :)")
-					Sleep(100)
-					_GUICtrlListView_Scroll($IDLISTVIEW, 0, -10000)
-					MyGlobalPatternPatch(_GUICtrlListView_GetItemText($IDLISTVIEW, $II, 1), $aOutTheGlobalArray)
 
-					_GUICtrlListView_Scroll($IDLISTVIEW, 0, 10)
-					Sleep(100)
+            Gui_State( $GUI_DISABLE )
+
+			For $II = 0 To _GUICtrlListView_GetItemCount($IDLISTVIEW) - 1
+
+				;Is Item checked
+				If _GUICtrlListView_GetItemChecked($IDLISTVIEW, $II) = True Then
+
+					; Focus item
+					_GUICtrlListView_SetItemSelected($IDLISTVIEW, $II)
+
+					Local $ItemToPatch = _GUICtrlListView_GetItemText($IDLISTVIEW, $II, 1)
+
+					DoSearch( $ItemToPatch )
+
+;~ 					ProgressWrite(0)
+
+					MemoWrite(	"Current path" & @CRLF & _
+								"---" & @CRLF & _
+								$ItemToPatch & @CRLF & _
+								"---" & @CRLF & "medication :)")
+
+;~ 					_GUICtrlListView_Scroll($IDLISTVIEW, 0, -10000)
+
+					DoPatch( $ItemToPatch , $aOutTheGlobalArray)
+
+;~ 					_GUICtrlListView_Scroll($IDLISTVIEW, 0, 10)
+
 				EndIf
+
+				; DeSelect item
 				_GUICtrlListView_SetItemChecked($IDLISTVIEW, $II, False)
+
 			Next
-			_GUICtrlListView_DeleteAllItems(GUICtrlGetHandle($IDLISTVIEW))
-			$MYDEFPATH = "C:\Program Files\Adobe"
-			MEMOWRITE("Current path" & @CRLF & "---" & @CRLF & $MYDEFPATH & @CRLF & "---" & @CRLF & "waiting for user action")
-			GUICtrlSetState($IDLISTVIEW, $GUI_ENABLE)
-			GUICtrlSetState($IDBUTTON_SEARCH, $GUI_ENABLE)
-			GUICtrlSetState($IDBUTTONCUSTOMFOLDER, $GUI_ENABLE)
-			GUICtrlSetState($IDBTNCURE, $GUI_DISABLE)
-			GUICtrlSetState($IDBUTTON_SEARCH, 256)
-			FillListViewWithInfo()
+
+			Gui_Main_Init()
+
 	EndSwitch
+
 	Sleep(10)
 WEnd
 
-Func MAINGUI()
+Func Gui_State( $state )
+	ConsoleWrite('@@ (306) :(' & @MIN & ':' & @SEC & ') Gui_State()' & @CR) ;### Trace Function
+
+    GUICtrlSetState(    $IDLISTVIEW,            $state )
+    GUICtrlSetState(    $IDBUTTON_Search,       $state )
+    GUICtrlSetState(    $IDBTNCURE,             $state )
+    GUICtrlSetState(    $IDBUTTONCUSTOMFOLDER,  $state )
+
+EndFunc
+
+Func Gui_Main_Create()
 
 	Const $Dlg_Width  =	900 ; <->
 	Const $Dlg_Height = 800 ;    ^v
@@ -293,21 +333,19 @@ Func MAINGUI()
 	$IDLISTVIEW = GUICtrlCreateListView("", _
 		$Dlg_Margin,							$Dlg_Margin,						$Dlg_Width , 	$Dlg_Height / 1.4, _
 		-1, $LVS_EX_FULLROWSELECT + $LVS_EX_CHECKBOXES )
-	_GUICtrlListView_SetItemCount(				-1, UBound($FilesToPatch))
+;~ 	_GUICtrlListView_SetItemCount(				-1, UBound($FilesToPatch))
 	_GUICtrlListView_AddColumn(					-1, "Id", 50)
 	_GUICtrlListView_AddColumn(					-1, "These files we will try to patch", 600)
 
-	FillListViewWithInfo()
-
 	$IDBUTTONCUSTOMFOLDER = GUICtrlCreateButton("Custom Path", _
 		$Dlg_Margin, 					        60 + $Dlg_Height / 1.4 ,	$BT_Width, 		$BT_Height )
-		GUICtrlSetTip(	-1, "Select Path that You want -> press Search -> press Pill button")
+		GUICtrlSetTip(	-1, "Select a path you want -> press Search -> press Pill button")
 
-	$IDBUTTON_SEARCH = GUICtrlCreateButton("Search Files", _
+	$IDBUTTON_Search = GUICtrlCreateButton("Search Files", _
 		($Dlg_Width + $Dlg_Margin*2)-$Dlg_Margin-$BT_Width  , 	60 + $Dlg_Height / 1.4, 	$BT_Width, 		$BT_Height )
 		GUICtrlSetTip(	-1, "Let GenP find Apps automatically in current path")
 
-	$MYOWNIDPROGRESS = GUICtrlCreateProgress( _
+	$GUI_Progressbar = GUICtrlCreateProgress( _
 		$Dlg_Margin, 										40 + $Dlg_Height / 1.4,  		$Dlg_Width , 	$BT_Height / 3,	 _
 			$PBS_SMOOTHREVERSE)
 
@@ -315,27 +353,46 @@ Func MAINGUI()
 		$Dlg_Margin, 										100 + $Dlg_Height / 1.4, 			$Dlg_Width, 	90, _
 			$ES_READONLY + $ES_CENTER + $WS_DISABLED )
 
-	MEMOWRITE("Current path" & @CRLF & "---" & @CRLF & $MYDEFPATH & @CRLF & "---" & @CRLF & "waiting for user action")
-
 	$IDBTNCURE = GUICtrlCreateButton("", _
 			$Dlg_Width / 2, 		$Dlg_Height / 1.04, 				$BT_WH_Cure, 		$BT_WH_Cure, _
 			$BS_BITMAP)
 			GUICtrlSetTip(		-1, "Cure")
 	_GUICtrlButton_SetImage(-1, @ScriptDir & "\ICONS\Cure.bmp")
-	GUICtrlSetState(	-1, $GUI_DISABLE)
-
-
-	GUICtrlSetState($IDBUTTON_SEARCH, $GUI_FOCUS )
 	GUISetState(@SW_SHOW)
-EndFunc   ;==>MAINGUI
 
+EndFunc   ;==>Gui_Main_Create
+
+
+Func Gui_Main_Init()
+	ConsoleWrite('@@ (367) :(' & @MIN & ':' & @SEC & ') Gui_Main_Init()' & @CR) ;### Trace Function
+
+
+	GUICtrlSetState($IDLISTVIEW, $GUI_DISABLE)
+
+	FillListViewWithInfo()
+
+	$Path_Default          =  $ProgramFilesDir & "\Adobe"
+	MemoWrite(	"Current path" & @CRLF & _
+				"---" & @CRLF & _
+				$Path_Default & @CRLF & _
+				"---" & @CRLF &  _
+				"waiting for user action")
+
+
+	Gui_State( $GUI_ENABLE )
+
+	GUICtrlSetState( $IDBUTTON_Search, $GUI_FOCUS )
+
+	FillListViewWithInfo()
+
+
+	GUICtrlSetState($IDBUTTON_Search, $GUI_FOCUS )
+EndFunc
 
 
 Func RecursiveFileSearch($INSTARTDIR, $DEPTH, $FILECOUNT)
 	;_FileListToArrayEx
 
-
-	Dim $RecursiveFileSearch_MaxDeep = 1
 	Dim $RecursiveFileSearch_WhenFoundRaiseToLevel = 0  ;0 to disable raising
 	if $DEPTH > $RecursiveFileSearch_MaxDeep then return
 
@@ -375,11 +432,11 @@ Func RecursiveFileSearch($INSTARTDIR, $DEPTH, $FILECOUNT)
 	Local $STARTDIR = $INSTARTDIR & "\"
 	$FileSearchedCount +=1
 
-	dim $HSEARCH = FileFindFirstFile($STARTDIR & "*.*")
+	dim $HSearch = FileFindFirstFile($STARTDIR & "*.*")
 	If @error Then Return
 
 	While 1
-		Local $NEXT = FileFindNextFile($HSEARCH)
+		Local $NEXT = FileFindNextFile($HSearch)
 		$FileSearchedCount +=1
 
 		If @error Then ExitLoop
@@ -393,23 +450,29 @@ Func RecursiveFileSearch($INSTARTDIR, $DEPTH, $FILECOUNT)
 ;~ 			   ( $targetDepth < $DEPTH ) Then _
 ;~ 				Return $targetDepth
 		Else
-			Local $IPATH = $STARTDIR & $NEXT
+			Local $IPATH = StringLower(  $STARTDIR & $NEXT )
+			ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $IPATH = ' & $IPATH & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
 
 			For $AdobeFileTarget In $TargetFileList_Adobe
 				local $FileNameCropped = StringSplit ( _
-					StringLower( $IPATH ),  _
+					$IPATH ,  _
 					StringLower( $AdobeFileTarget ),  _
 					$STR_ENTIRESPLIT   _
 				)
 				If  @error <> 1 then
-					if not StringInStr($IPATH, ".bak"        ) Then
-						;_ArrayAdd( $FilesToPatch, $DEPTH & " - " & $IPATH )
-						_ArrayAdd( $FilesToPatch, $IPATH )
-					Else
+					Local $BackupFile = $IPATH & ".bak"
+
+					if  StringInStr($FileNameCropped[2], ".bak" )         Then
 						_ArrayAdd( $FilesToRestore, $IPATH )
+					Else
+
+						if FileExists ( $BackupFile ) <> 1 then
+							;_ArrayAdd( $FilesToPatch, $DEPTH & " - " & $IPATH )
+							_ArrayAdd( $FilesToPatch, $IPATH )
+						EndIf
 					EndIf
 
-				  ; File Found and stored - Quit search in current dir
+				  ; File Found and stored - Quit Search in current dir
 ;~ 					return $RecursiveFileSearch_WhenFoundRaiseToLevel
 				EndIf
 			Next
@@ -419,113 +482,167 @@ Func RecursiveFileSearch($INSTARTDIR, $DEPTH, $FILECOUNT)
 
 	;Lazy screenupdates
 	If 1 = Random ( 0, 10, 1) then
-		MEMOWRITE(	"Searching in " & $FILECOUNT & " files" & @TAB & @TAB & "Found : " & UBound( $FilesToPatch ) & @CRLF & _
+		MemoWrite(	"Searching in " & $FILECOUNT & " files" & @TAB & @TAB & "Found : " & UBound( $FilesToPatch ) & @CRLF & _
 					"---" 			& @CRLF & _
-					"Level: " & $DEPTH & "  Time elapsed : " & Round(TimerDiff($TIMESTAMP) / 1000, 0) & " second(s)" & @TAB & @TAB & "Excluded because of *.bak: " & UBound( $FilesToRestore ) &  @CRLF & _
+					"Level: " & $DEPTH & "  Time elapsed : " & Round(TimerDiff($TimeStamp) / 1000, 0) & " second(s)" & @TAB & @TAB & "Excluded because of *.bak: " & UBound( $FilesToRestore ) &  @CRLF & _
 					"---" 			& @CRLF & _
 					$INSTARTDIR _
 					)
 		ProgressWrite( $ProgressFileCountScale * $FileSearchedCount )
 	EndIf
 
-	FileClose($HSEARCH)
+	FileClose($HSearch)
 EndFunc   ;==>RecursiveFileSearch
 
 
-Func FillListViewWithInfo()
-	For $I = 0 To 25
-		_GUICtrlListView_AddItem($IDLISTVIEW, "", $I)
+Func ListView_Text( $TextArray )
+	ConsoleWrite('@@ (494) :(' & @MIN & ':' & @SEC & ') ListView_Text()' & @CR) ;### Trace Function
+	_GUICtrlListView_DeleteAllItems( GUICtrlGetHandle($IDLISTVIEW) )
+
+	Local $SubItemIndex=0
+	For $I In  $TextArray
+		_GUICtrlListView_AddItem	(	$IDLISTVIEW,           "" )
+		_GUICtrlListView_AddSubItem	( -1, $SubItemIndex ,  $I  , 1)
+		$SubItemIndex += 1
 	Next
-	_GUICtrlListView_AddSubItem( -1,  0, "How to use GenP", 1)
-	_GUICtrlListView_AddSubItem( -1,  1, "If you want to patch all Adobe apps in default location:", 1)
-	_GUICtrlListView_AddSubItem( -1,  2, "Press 'Search Files' - wait until GenP finds all files", 1)
-	_GUICtrlListView_AddSubItem( -1,  3, "Press 'Pill Button' - wait until GenP will do it's job", 1)
-	_GUICtrlListView_AddSubItem( -1,  4, "-------------------------------------------------------------", 1)
-	_GUICtrlListView_AddSubItem( -1,  5, "One Adobe app at a time", 1)
-	_GUICtrlListView_AddSubItem( -1,  6, "Press 'Custom path' - Select folder that you want for ex:", 1)
-	_GUICtrlListView_AddSubItem( -1,  7, "C:\Program Files\WindowsApps\Adobe.Fresco_* or", 1)
-	_GUICtrlListView_AddSubItem( -1,  8, "C:\Program Files\WindowsApps\Adobe.XD_* or", 1)
-	_GUICtrlListView_AddSubItem( -1,  9, "C:\Program Files\Adobe\Adobe Photoshop *", 1)
-	_GUICtrlListView_AddSubItem( -1, 10, "Press 'Search Files' - wait until GenP finds all files", 1)
-	_GUICtrlListView_AddSubItem( -1, 11, "Press 'Pill Button' - wait until GenP will do it's job", 1)
-	_GUICtrlListView_AddSubItem( -1, 12, "-------------------------------------------------------------", 1)
-	_GUICtrlListView_AddSubItem( -1, 13, "What's new in GenP", 1)
-	_GUICtrlListView_AddSubItem( -1, 14, "Can patch apps from 2019 version to current and future releases", 1)
-	_GUICtrlListView_AddSubItem( -1, 15, "Automatic search in selected folder", 1)
-	_GUICtrlListView_AddSubItem( -1, 16, "New patching logic", 1)
-	_GUICtrlListView_AddSubItem( -1, 17, "Support for all Substance products", 1)
-	_GUICtrlListView_AddSubItem( -1, 18, "-------------------------------------------------------------", 1)
-	_GUICtrlListView_AddSubItem( -1, 19, "Known issues:", 1)
-	_GUICtrlListView_AddSubItem( -1, 20, "1. InDesign and InCopy will have high Cpu usage", 1)
-	_GUICtrlListView_AddSubItem( -1, 21, "2. Animate will have some problems with home screen if Signed Out", 1)
-	_GUICtrlListView_AddSubItem( -1, 22, "3. Lightroom Classic will partially work if Signed Out", 1)
-	_GUICtrlListView_AddSubItem( -1, 23, "4. Acrobat,Rush,Lightroom Online,Photosop Express,Creative Cloud App", 1)
-	_GUICtrlListView_AddSubItem( -1, 24, "   won't be patched or fully unlocked", 1)
-	_GUICtrlListView_AddSubItem( -1, 25, "   Maybe in next release i'll find solution for them", 1)
+EndFunc
+
+Func FillListViewWithInfo()
+	ConsoleWrite('@@ (506) :(' & @MIN & ':' & @SEC & ') FillListViewWithInfo()' & @CR) ;### Trace Function
+	Local $tmp[23] = [ _
+		"How to use GenP", _
+		"If you want to patch all Adobe apps in default location:", _
+		"Press 'Search Files' - wait until GenP finds all files", _
+		"Press 'Pill Button' - wait until GenP will do it's job", _
+		"-------------------------------------------------------------", _
+		"One Adobe app at a time", _
+		"Press 'Custom path' - Select folder that you want for ex:", _
+		"C:\Program Files\Adobe\Adobe Photoshop *", _
+		"Press 'Search Files' - wait until GenP finds all files", _
+		"Press 'Pill Button' - wait until GenP will do it's job", _
+		"-------------------------------------------------------------", _
+		"What's new in GenP", _
+		"Can patch apps from 2019 version to current and future releases", _
+		"Automatic Search in selected folder", _
+		"New patching logic", _
+		"Support for all Substance products", _
+		"-------------------------------------------------------------", _
+		"Known issues:", _
+		"1. InDesign and InCopy will have high Cpu usage", _
+		"2. Animate will have some problems with home screen if Signed Out", _
+		"3. Lightroom Classic will partially work if Signed Out", _
+		"4. Acrobat,Rush,Lightroom Online,Photosop Express,Creative Cloud App", _
+		"   won't be patched or fully unlocked" _
+		]
+
+	ListView_Text( $tmp )
 
    ;Hide Checkbox column
 	_GUICtrlListView_SetColumnWidth($IDLISTVIEW, 0 ,0)
 EndFunc   ;==>FillListViewWithInfo
 
 Func FillListViewWithFiles()
+	ConsoleWrite('@@ (540) :(' & @MIN & ':' & @SEC & ') FillListViewWithFiles()' & @CR) ;### Trace Function
+	_GUICtrlListView_DeleteAllItems( GUICtrlGetHandle($IDLISTVIEW) )
+
 	If UBound($FilesToPatch) > 0 Then
-		Global $AITEMS[UBound($FilesToPatch)][2]
-		For $II = 0 To UBound($AITEMS) - 1
-			$AITEMS[$II][0] = $II
-			$AITEMS[$II][1] = $FilesToPatch[$II][0]
+
+		; Make Listview columns ID and filename
+		Global $aItems[UBound($FilesToPatch)][2]
+		For $II = 0 To UBound($aItems) - 1
+			$aItems[$II][0] = $II
+			$aItems[$II][1] = $FilesToPatch[$II][0]
 		Next
 
-		_GUICtrlListView_AddArray($IDLISTVIEW, $AITEMS)
+		_GUICtrlListView_AddArray( $IDLISTVIEW, $aItems)
 
-		MEMOWRITE( 	UBound($FilesToPatch) & " File(s) were found in " & _
-					Round(TimerDiff($TIMESTAMP) / 1000, 0) & " second(s) at:" & @CRLF & _
+		MemoWrite( 	UBound($FilesToPatch) & " File(s) were found in " & _
+					Round(TimerDiff($TimeStamp) / 1000, 0) & " second(s) at:" & @CRLF & _
 					"---" 		& @CRLF & _
-					$MYDEFPATH 	& @CRLF & _
+					$Path_Default 	& @CRLF & _
 					"---" 		& @CRLF & _
 					"Press the Pill button" _
 					)
 	   ; show Checkbox column
-		_GUICtrlListView_SetColumnWidth($IDLISTVIEW, 0 ,23)
+		_GUICtrlListView_SetColumnWidth( $IDLISTVIEW, 0 ,23)
+
+	  ;	Select all
+		For $II = 0 To _GUICtrlListView_GetItemCount($IDLISTVIEW) - 1
+				_GUICtrlListView_SetItemChecked($IDLISTVIEW, $II)
+		Next
+
 
 	Else
-		MEMOWRITE("Nothing was found in" & @CRLF & "---" & @CRLF & $MYDEFPATH & @CRLF & "---" & @CRLF & "waiting for user action")
+		MemoWrite(	"Nothing was found in" & @CRLF & _
+					"---" & @CRLF & _
+					$Path_Default & @CRLF & _
+					"---" & @CRLF & _
+					"waiting for user action")
 	EndIf
-EndFunc   ;==>FillListViewWithFiles
+EndFunc
 
-Func MEMOWRITE($SMESSAGE)
-	GUICtrlSetData($G_IDMEMO, $SMESSAGE)
-EndFunc   ;==>MEMOWRITE
+Func MemoWrite($sMessage)
+	GUICtrlSetData($G_IDMEMO, $sMessage)
+EndFunc
+
+Func ProgressInit( $Scale )
+    Global $ProgressFileCountScale = $Scale
+	_SendMessage( $HWND_PROGRESS, $PBM_SETPOS, 0 )
+EndFunc
 
 Func ProgressWrite($MSG_PROGRESS)
 	_SendMessage($HWND_PROGRESS, $PBM_SETPOS, $MSG_PROGRESS)
 EndFunc   ;==>ProgressWrite
 
-Func MYFILEOPENDIALOG()
-	Local Const $SMESSAGE = "Select a Path"
-	Local $MYTEMPPATH = FileSelectFolder($SMESSAGE, $MYDEFPATH, 0, $MYDEFPATH, $MYHGUI)
+Func ProgressDone( )
+    ProgressInit( 1 )
+EndFunc
+
+
+Func myFileOpenDialog()
+	ConsoleWrite('@@ (602) :(' & @MIN & ':' & @SEC & ') myFileOpenDialog()' & @CR) ;### Trace Function
+
+	Local $StatusText= "Press the Search button"
+
+	Local $MYTEMPPATH = FileSelectFolder( _
+							"Select a Path",  _
+							$Path_Default, 0, $Path_Default,  _
+							$MYHGUI )
 	If @error Then
-		MEMOWRITE("Current path" & @CRLF & "---" & @CRLF & $MYDEFPATH & @CRLF & "---" & @CRLF & "waiting for user action")
+
+		$StatusText= "waiting for user action"
+
 	Else
-		GUICtrlSetState($IDBTNCURE, $GUI_DISABLE)
-		$MYDEFPATH = $MYTEMPPATH
-		_GUICtrlListView_DeleteAllItems(GUICtrlGetHandle($IDLISTVIEW))
-		_GUICtrlListView_AddItem($IDLISTVIEW, "", 0)
-		_GUICtrlListView_AddItem($IDLISTVIEW, "", 1)
-		_GUICtrlListView_AddItem($IDLISTVIEW, "", 2)
-		_GUICtrlListView_AddSubItem($IDLISTVIEW, 0, $MYDEFPATH, 1)
-		_GUICtrlListView_AddSubItem($IDLISTVIEW, 1, "Press 'Search Files' - wait until GenP finds all files", 1)
-		_GUICtrlListView_AddSubItem($IDLISTVIEW, 2, "Press 'Pill Button' - wait until GenP will do it's job", 1)
-		MEMOWRITE("Current path" & @CRLF & "---" & @CRLF & $MYDEFPATH & @CRLF & "---" & @CRLF & "Press the Search button")
+
+		GUICtrlSetState( $IDBTNCURE, $GUI_DISABLE)
+
+		$Path_Default = $MYTEMPPATH
+
+		Local $tmp[3] = [ _
+			$Path_Default, _
+			"Press 'Search Files' - wait until GenP finds all files.", _
+			"Press 'Pill Button'  - wait until GenP will do it's job." _
+		]
+		ListView_Text( $tmp )
+
 	EndIf
-EndFunc   ;==>MYFILEOPENDIALOG
+
+	MemoWrite(	"Current path" & @CRLF & _
+			"---" & @CRLF & _
+			$Path_Default & @CRLF & _
+			"---" & @CRLF & _
+			$StatusText )
+EndFunc   ;==>myFileOpenDialog
 
 Func _PROCESSCLOSEEX($SPIDHANDLE)
+	ConsoleWrite('@@ (637) :(' & @MIN & ':' & @SEC & ') _PROCESSCLOSEEX()' & @CR) ;### Trace Function
 	If IsString($SPIDHANDLE) Then $SPIDHANDLE = ProcessExists($SPIDHANDLE)
 	If Not $SPIDHANDLE Then Return SetError(1, 0, 0)
 	Return Run(@ComSpec & " /c taskkill /F /PID " & $SPIDHANDLE & " /T", @SystemDir, @SW_HIDE)
 EndFunc   ;==>_PROCESSCLOSEEX
 
 Func ShowEscMessage()
+	ConsoleWrite('@@ (644) :(' & @MIN & ':' & @SEC & ') ShowEscMessage()' & @CR) ;### Trace Function
 	If ( WinGetState($MYHGUI) = _
 	        $WIN_STATE_EXISTS  + _
 			$WIN_STATE_VISIBLE + _
@@ -536,18 +653,21 @@ Func ShowEscMessage()
 
 EndFunc   ;==>ShowEscMessage
 
-Func MYGLOBALPATTERNSEARCH($Data)
+Func DoSearch($Data)
+	ConsoleWrite('@@ (656) :(' & @MIN & ':' & @SEC & ') DoSearch()' & @CR) ;### Trace Function
 	Sleep(100)
 
 	ConsoleWrite($Data & @CRLF)
 
-	$AINHEXARRAY = $ANULLARRAY
-	$aOutTheGlobalArray = $ANULLARRAY
+	$aInHexArray 		= $ANullArray
+	$aOutTheGlobalArray = $ANullArray
+
 	ProgressWrite(0)
 
 	$RegExp_SearchCOUNT = 0
 	$COUNT = 15
-	MEMOWRITE( $Data & @CRLF & _
+
+	MemoWrite( $Data & @CRLF & _
 				"---" & @CRLF & _
 				"Preparing to Analyze" & @CRLF & _
 				"---" & @CRLF & _
@@ -599,7 +719,7 @@ Func MYGLOBALPATTERNSEARCH($Data)
 				$COUNT = 0
 				ProgressWrite(0)
 			Else
-				MEMOWRITE(	$Data & @CRLF & _
+				MemoWrite(	$Data & @CRLF & _
 							"---" & @CRLF & _
 							"File was already patched?. Aborting..." & @CRLF & _
 							"---" _
@@ -631,7 +751,7 @@ Func MYGLOBALPATTERNSEARCH($Data)
 			$COUNT = 0
 			ProgressWrite(0)
 		Else
-			MEMOWRITE(	$Data & @CRLF & _
+			MemoWrite(	$Data & @CRLF & _
 						"---" & @CRLF & _
 						"File was already patched?. Aborting..." & @CRLF & _
 						"---" _
@@ -642,43 +762,56 @@ Func MYGLOBALPATTERNSEARCH($Data)
 			ProgressWrite(0)
 		EndIf
 	EndIf
-EndFunc   ;==>MYGLOBALPATTERNSEARCH
+EndFunc   ;==>DoSearch
 
-Func RegExp_Search($FILETOPARSE, $PATTERNTOSEARCH, $PATTERNTOREPLACE, $PATTERNNAME)
-	Local $hFile = FileOpen($FILETOPARSE, $FO_READ + $FO_BINARY)
+Func RegExp_Search($FILETOPARSE, $PatternTOSearch, $PatternTOReplace, $PatternName)
+	ConsoleWrite('@@ (767) :(' & @MIN & ':' & @SEC & ') RegExp_Search()' & @CR) ;### Trace Function
+
+	Local $hFile    = FileOpen($FILETOPARSE, $FO_READ + $FO_BINARY)
 	Local $FileData = FileRead($hFile)
 
-	Local $ISEARCHPATTERN  = $PATTERNTOSEARCH
-	Local $IREPLACEPATTERN = $PATTERNTOREPLACE
-	Local $INEWSEARCHCONSTRUCT = "", $INEWREPLACECONSTRUCT = "", $INEWREPLACECONSTRUCT1 = ""
-	$AINHEXARRAY = StringRegExp($FileData, $ISEARCHPATTERN, $STR_REGEXPARRAYFULLMATCH, 1)
+	Local $INEWSearchConstruct = "", $INEWReplaceConstruct = "", $INEWReplaceConstruct1 = ""
+
+	$aInHexArray = StringRegExp( $FileData, $PatternTOSearch, $STR_REGEXPARRAYFULLMATCH)
 	If @error = 0 Then
-		$INEWSEARCHCONSTRUCT = $AINHEXARRAY[0]
-		For $I = 0 To UBound($IREPLACEPATTERN) - 1
-			$INEWREPLACECONSTRUCT &= $IREPLACEPATTERN[$I]
-		Next
-		If StringInStr($INEWREPLACECONSTRUCT, "?") Then
-			For $I = 1 To StringLen($INEWREPLACECONSTRUCT) + 1
-				Local $SSTRING1 = StringMid($INEWSEARCHCONSTRUCT, $I, 1)
-				Local $SSTRING2 = StringMid($INEWREPLACECONSTRUCT, $I, 1)
+
+		$INEWSearchConstruct  = $aInHexArray[0]
+
+        $INEWReplaceConstruct = _ArrayToString( $PatternTOReplace , "")
+
+        ; Replace all '?' in ReplaceString with Data from SearchString
+		If StringInStr($INEWReplaceConstruct, "?") Then
+			For $I = 1 To StringLen($INEWReplaceConstruct) + 1
+				Local $SSTRING1 = StringMid( $INEWSearchConstruct , $I, 1)
+				Local $SSTRING2 = StringMid( $INEWReplaceConstruct, $I, 1)
 				If $SSTRING2 <> "?" Then
-					$INEWREPLACECONSTRUCT1 &= $SSTRING2
+					$INEWReplaceConstruct1 &= $SSTRING2
 				Else
-					$INEWREPLACECONSTRUCT1 &= $SSTRING1
+					$INEWReplaceConstruct1 &= $SSTRING1
 				EndIf
+
 			Next
 		Else
-			$INEWREPLACECONSTRUCT1 = $INEWREPLACECONSTRUCT
+			$INEWReplaceConstruct1 = $INEWReplaceConstruct
 		EndIf
-		_ArrayAdd($aOutTheGlobalArray, $INEWSEARCHCONSTRUCT)
-		_ArrayAdd($aOutTheGlobalArray, $INEWREPLACECONSTRUCT1)
 
-		ConsoleWrite($PATTERNNAME &      "---" & @TAB & $INEWSEARCHCONSTRUCT & "	" & @CRLF)
-		ConsoleWrite($PATTERNNAME & "R" & "--" & @TAB & $INEWREPLACECONSTRUCT1 & "	" & @CRLF)
-		MEMOWRITE(   $FILETOPARSE & @CRLF & "---" & @CRLF & $PATTERNNAME & @CRLF & "---" & @CRLF & $INEWSEARCHCONSTRUCT & @CRLF & $INEWREPLACECONSTRUCT1)
+		_ArrayAdd( $aOutTheGlobalArray, $INEWSearchConstruct   )
+		_ArrayAdd( $aOutTheGlobalArray, $INEWReplaceConstruct1 )
+
+		ConsoleWrite($PatternName &      "---" & @TAB & $INEWSearchConstruct & "	" & @CRLF)
+		ConsoleWrite($PatternName & "R" & "--" & @TAB & $INEWReplaceConstruct1 & "	" & @CRLF)
+		MemoWrite(  $FILETOPARSE & @CRLF & _
+                    "---" & @CRLF &  _
+                    $PatternName & @CRLF &  _
+                    "---" & @CRLF &  _
+                    $INEWSearchConstruct & @CRLF &  _
+                    $INEWReplaceConstruct1 _
+                    )
 	Else
-		ConsoleWrite($PATTERNNAME & "---" & @TAB & "No" & "	" & @CRLF)
-		MEMOWRITE(   $FILETOPARSE & @CRLF & "---" & @CRLF & $PATTERNNAME & "---" & "No")
+		ConsoleWrite($PatternName & "---" & @TAB & "No" & "	" & @CRLF)
+		MemoWrite(   $FILETOPARSE & @CRLF &  _
+                     "---" & @CRLF &  _
+                     $PatternName & "---" & "No")
 	EndIf
 
 	$RegExp_SearchCOUNT += 1
@@ -689,37 +822,50 @@ Func RegExp_Search($FILETOPARSE, $PATTERNTOSEARCH, $PATTERNTOREPLACE, $PATTERNNA
 	Sleep(100)
 EndFunc   ;==>RegExp_Search
 
-Func MyGlobalPatternPatch( $FileToPatch , $MYARRAYTOPATCH)
-	ProgressWrite(0)
+Func DoPatch( $FileName_Patch , $MyArrayToPatch)
+	ConsoleWrite('@@ (825) :(' & @MIN & ':' & @SEC & ') DoPatch()' & @CR) ;### Trace Function
 
-	MEMOWRITE("Current path" & @CRLF & "---" & @CRLF &  $FileToPatch  & @CRLF & "---" & @CRLF & "medication :)")
+	local $FileName_Backup = $FileName_Patch  & ".bak"
+	if FileExists (	$FileName_Backup ) Then
+		MemoWrite   ("Error: Can't apply patch. Please remove backupfile '" & $FileName_Backup & "'!" )
+		ConsoleWrite("Error: Can't apply patch. Please remove backupfile '" & $FileName_Backup & "'!" )
+		Return
+	EndIf
 
-	Local $IROWS1 = 0
-	$IROWS1 = UBound($MYARRAYTOPATCH)
+	ProgressInit ( 100 / UBound($MyArrayToPatch)  )
 
-	If $IROWS1 > 0 Then
+	MemoWrite( _
+		"Current path" & @CRLF & _
+		"---" & @CRLF &  _
+		$FileName_Patch  & @CRLF & _
+		"---" & @CRLF & _
+		"medication :)" _
+		)
+
+
+	If UBound($MyArrayToPatch) > 0 Then
 		; Read in File
-		Local $hFile 	 = 	FileOpen( $FileToPatch , $FO_READ + $FO_BINARY)
+		Local $hFile    = FileOpen( $FileName_Patch , $FO_READ + $FO_BINARY)
 		Local $FileData = FileRead($hFile)
 
 		; Apply Patches in Memory
-		For $I = 0 To $IROWS1 - 1 Step 2
+		For $I = 0 To UBound($MyArrayToPatch) - 1 Step 2
 			Local $SSTRINGOUT = StringReplace( $FileData, _
-				$MYARRAYTOPATCH[$I], _
-				$MYARRAYTOPATCH[$I + 1], _
+				$MyArrayToPatch[$I], _
+				$MyArrayToPatch[$I + 1], _
 				0, $STR_CASESENSE )
 
-			$FileData = $SSTRINGOUT
-			$SSTRINGOUT = $FileData
-			ProgressWrite( Round ($I / $IROWS1 * 100) )
+;~ 			$FileData = $SSTRINGOUT
+;~ 			$SSTRINGOUT = $FileData
+			ProgressWrite( $I  )
 		Next
 		FileClose($hFile)
 
 		;Make Backup
-		FileMove( $FileToPatch ,  $FileToPatch  & ".bak", 1)
+		FileMove( $FileName_Patch , $FileName_Backup  , 1)
 
 		; Write Patches to File
-		$hFile = FileOpen( $FileToPatch , $FO_OVERWRITE + $FO_BINARY)
+		$hFile = FileOpen( $FileName_Patch , $FO_OVERWRITE + $FO_BINARY)
 		FileWrite($hFile, Binary($SSTRINGOUT))
 		FileClose($hFile)
 
@@ -727,6 +873,4 @@ Func MyGlobalPatternPatch( $FileToPatch , $MYARRAYTOPATCH)
 		Sleep(100)
 	Else
 	EndIf
-EndFunc   ;==>MyGlobalPatternPatch
-
-; DeTokenise by myAut2Exe >The Open Source AutoIT/AutoHotKey script decompiler< 2.16 build(215)
+EndFunc   ;==>DoPatch
