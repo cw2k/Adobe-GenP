@@ -231,8 +231,8 @@ While 1
             Gui_State( $GUI_DISABLE )
 
 			Local $tmp[2] = [ _
-			"Searching for files. Be patient, please", _
-			"Press 'Esc' to terminate GenP if you want" _
+			"定位文件中，请耐心等待~", _
+			"按'Esc'关闭GenP" _
 			]
 			ListView_Text( $tmp )
 
@@ -242,7 +242,7 @@ While 1
 
 			$TimeStamp          = TimerInit()
 
-			MemoWrite ("Counting files ...")
+			MemoWrite ("计算文件数量 ...")
 			local $FileCount         = DirGetSize( $Path_Default, $DIR_EXTENDED ) [1]
 															;[0] = Size;   [1] = Files count ;[2] = Dirs Count
 			Global $FileSearchedCount = 0
@@ -278,7 +278,7 @@ While 1
 
 ;~ 					ProgressWrite(0)
 
-					MemoWrite(	"Current path" & @CRLF & _
+					MemoWrite(	"当前目录" & @CRLF & _
 								"---" & @CRLF & _
 								$ItemToPatch & @CRLF & _
 								"---" & @CRLF & "medication :)")
@@ -335,15 +335,15 @@ Func Gui_Main_Create()
 		-1, $LVS_EX_FULLROWSELECT + $LVS_EX_CHECKBOXES )
 ;~ 	_GUICtrlListView_SetItemCount(				-1, UBound($FilesToPatch))
 	_GUICtrlListView_AddColumn(					-1, "Id", 50)
-	_GUICtrlListView_AddColumn(					-1, "These files we will try to patch", 600)
+	_GUICtrlListView_AddColumn(					-1, "将破解以下文件", 600)
 
-	$IDBUTTONCUSTOMFOLDER = GUICtrlCreateButton("Custom Path", _
+	$IDBUTTONCUSTOMFOLDER = GUICtrlCreateButton("选择目录", _
 		$Dlg_Margin, 					        60 + $Dlg_Height / 1.4 ,	$BT_Width, 		$BT_Height )
-		GUICtrlSetTip(	-1, "Select a path you want -> press Search -> press Pill button")
+		GUICtrlSetTip(	-1, "选择一个目录 -> 点击搜索按钮 -> 点击Pill按钮")
 
-	$IDBUTTON_Search = GUICtrlCreateButton("Search Files", _
+	$IDBUTTON_Search = GUICtrlCreateButton("搜索", _
 		($Dlg_Width + $Dlg_Margin*2)-$Dlg_Margin-$BT_Width  , 	60 + $Dlg_Height / 1.4, 	$BT_Width, 		$BT_Height )
-		GUICtrlSetTip(	-1, "Let GenP find Apps automatically in current path")
+		GUICtrlSetTip(	-1, "GenP会自动寻找当前目录中的Adobe软件")
 
 	$GUI_Progressbar = GUICtrlCreateProgress( _
 		$Dlg_Margin, 										40 + $Dlg_Height / 1.4,  		$Dlg_Width , 	$BT_Height / 3,	 _
@@ -372,11 +372,11 @@ Func Gui_Main_Init()
 	FillListViewWithInfo()
 
 	$Path_Default          =  $ProgramFilesDir & "\Adobe"
-	MemoWrite(	"Current path" & @CRLF & _
+	MemoWrite(	"当前目录" & @CRLF & _
 				"---" & @CRLF & _
 				$Path_Default & @CRLF & _
 				"---" & @CRLF &  _
-				"waiting for user action")
+				"等待用户操作")
 
 
 	Gui_State( $GUI_ENABLE )
@@ -482,9 +482,9 @@ Func RecursiveFileSearch($INSTARTDIR, $DEPTH, $FILECOUNT)
 
 	;Lazy screenupdates
 	If 1 = Random ( 0, 10, 1) then
-		MemoWrite(	"Searching in " & $FILECOUNT & " files" & @TAB & @TAB & "Found : " & UBound( $FilesToPatch ) & @CRLF & _
+		MemoWrite(	"共计" & $FILECOUNT & "文件 " & @TAB & @TAB & "找到 : " & UBound( $FilesToPatch ) & @CRLF & _
 					"---" 			& @CRLF & _
-					"Level: " & $DEPTH & "  Time elapsed : " & Round(TimerDiff($TimeStamp) / 1000, 0) & " second(s)" & @TAB & @TAB & "Excluded because of *.bak: " & UBound( $FilesToRestore ) &  @CRLF & _
+					"目录深度: " & $DEPTH & "  时间 : " & Round(TimerDiff($TimeStamp) / 1000, 0) & "秒" & @TAB & @TAB & "由于*.bak排除: " & UBound( $FilesToRestore ) &  @CRLF & _
 					"---" 			& @CRLF & _
 					$INSTARTDIR _
 					)
@@ -556,12 +556,12 @@ Func FillListViewWithFiles()
 
 		_GUICtrlListView_AddArray( $IDLISTVIEW, $aItems)
 
-		MemoWrite( 	UBound($FilesToPatch) & " File(s) were found in " & _
-					Round(TimerDiff($TimeStamp) / 1000, 0) & " second(s) at:" & @CRLF & _
+		MemoWrite( "找到" & UBound($FilesToPatch) & " 个符合要求的文件，耗时 " & _
+					Round(TimerDiff($TimeStamp) / 1000, 0) & "秒 目录：" & @CRLF & _
 					"---" 		& @CRLF & _
 					$Path_Default 	& @CRLF & _
 					"---" 		& @CRLF & _
-					"Press the Pill button" _
+					"请点击下方Pill按钮" _
 					)
 	   ; show Checkbox column
 		_GUICtrlListView_SetColumnWidth( $IDLISTVIEW, 0 ,23)
@@ -573,11 +573,11 @@ Func FillListViewWithFiles()
 
 
 	Else
-		MemoWrite(	"Nothing was found in" & @CRLF & _
+		MemoWrite(	"在此目录中没有相应的文件" & @CRLF & _
 					"---" & @CRLF & _
 					$Path_Default & @CRLF & _
 					"---" & @CRLF & _
-					"waiting for user action")
+					"请检查并更换文件夹再次操作")
 	EndIf
 EndFunc
 
@@ -602,15 +602,15 @@ EndFunc
 Func myFileOpenDialog()
 	ConsoleWrite('@@ (602) :(' & @MIN & ':' & @SEC & ') myFileOpenDialog()' & @CR) ;### Trace Function
 
-	Local $StatusText= "Press the Search button"
+	Local $StatusText= "请点击搜索按钮"
 
 	Local $MYTEMPPATH = FileSelectFolder( _
-							"Select a Path",  _
+							"请选择一个目录",  _
 							$Path_Default, 0, $Path_Default,  _
 							$MYHGUI )
 	If @error Then
 
-		$StatusText= "waiting for user action"
+		$StatusText= "等待用户操作"
 
 	Else
 
@@ -620,14 +620,14 @@ Func myFileOpenDialog()
 
 		Local $tmp[3] = [ _
 			$Path_Default, _
-			"Press 'Search Files' - wait until GenP finds all files.", _
-			"Press 'Pill Button'  - wait until GenP will do it's job." _
+			"点击搜索，等待GenP定位所有文件。", _
+			"点击Pill按钮，等待GenP完成破解。" _
 		]
 		ListView_Text( $tmp )
 
 	EndIf
 
-	MemoWrite(	"Current path" & @CRLF & _
+	MemoWrite(	"当前目录" & @CRLF & _
 			"---" & @CRLF & _
 			$Path_Default & @CRLF & _
 			"---" & @CRLF & _
@@ -648,7 +648,7 @@ Func ShowEscMessage()
 			$WIN_STATE_VISIBLE + _
 			$WIN_STATE_ENABLED ) _
 	And _
-	($IDYES  = MsgBox( $MB_YESNO + $MB_ICONERROR , $g_AppWndTitle, "Do you want to terminate ?") ) Then	_
+	($IDYES  = MsgBox( $MB_YESNO + $MB_ICONERROR , $g_AppWndTitle, "是否结束 ?") ) Then	_
 		Exit
 
 EndFunc   ;==>ShowEscMessage
@@ -669,7 +669,7 @@ Func DoSearch($Data)
 
 	MemoWrite( $Data & @CRLF & _
 				"---" & @CRLF & _
-				"Preparing to Analyze" & @CRLF & _
+				"准备分析目录" & @CRLF & _
 				"---" & @CRLF & _
 				"*****" _
 	)
@@ -721,7 +721,7 @@ Func DoSearch($Data)
 			Else
 				MemoWrite(	$Data & @CRLF & _
 							"---" & @CRLF & _
-							"File was already patched?. Aborting..." & @CRLF & _
+							"文件已经破解成完成？ 停止本次操作 ..." & @CRLF & _
 							"---" _
 				)
 				Sleep(100)
@@ -753,7 +753,7 @@ Func DoSearch($Data)
 		Else
 			MemoWrite(	$Data & @CRLF & _
 						"---" & @CRLF & _
-						"File was already patched?. Aborting..." & @CRLF & _
+						"文件已经破解成完成？ 停止本次操作 ..." & @CRLF & _
 						"---" _
 			)
 			Sleep(100)
@@ -827,15 +827,15 @@ Func DoPatch( $FileName_Patch , $MyArrayToPatch)
 
 	local $FileName_Backup = $FileName_Patch  & ".bak"
 	if FileExists (	$FileName_Backup ) Then
-		MemoWrite   ("Error: Can't apply patch. Please remove backupfile '" & $FileName_Backup & "'!" )
-		ConsoleWrite("Error: Can't apply patch. Please remove backupfile '" & $FileName_Backup & "'!" )
+		MemoWrite   ("错误！无法完成破解，请删除软件的备份文件！'" & $FileName_Backup & "'!" )
+		ConsoleWrite("错误！无法完成破解，请删除软件的备份文件！ '" & $FileName_Backup & "'!" )
 		Return
 	EndIf
 
 	ProgressInit ( 100 / UBound($MyArrayToPatch)  )
 
 	MemoWrite( _
-		"Current path" & @CRLF & _
+		"当前目录" & @CRLF & _
 		"---" & @CRLF &  _
 		$FileName_Patch  & @CRLF & _
 		"---" & @CRLF & _
